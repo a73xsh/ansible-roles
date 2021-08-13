@@ -1,0 +1,74 @@
+---
+# tasks file for deploy_ssrs
+- name: Check if SSRS is already download
+  win_stat:
+    path: '{{ dpm_mssql_engine_temp_dir }}\{{ ssrs_package }}'
+  register: ssrs_info
+
+- name: Copy SSRS package...
+  win_get_url:
+    url:  '{{ ssrs_path }}'
+    dest: '{{ dpm_mssql_engine_temp_dir }}\{{ ssrs_package }}'
+    timeout: 300
+  when:
+    - not ssrs_info.stat.exists
+
+- name: install sql report server
+  win_dsc:
+    resource_name:                 SqlRSSetup
+    InstanceName:                  SSRS
+    action:                        Install
+    sourcepath:                    '{{ dpm_mssql_engine_temp_dir }}/{{ ssrs_package }}'
+    IAcceptLicenseTerms:           'yes'
+    Edition:                       'Development'
+    PsDscRunAsCredential_username: '{{ ansible_user }}'
+    PsDscRunAsCredential_password: '{{ ansible_password }}'
+
+- name: Check SSRS Service Account
+  win_shell: |
+    $sqlInstanceName = 'SSRS'
+    $ns = "root\Microsoft\SqlServer\ReportServer\RS_$sqlInstanceName\v14\Admin"
+    $RSObject = Get-WmiObject -class "MSReportServer_ConfigurationSetting" -namespace "$ns"
+    $RSObject.WindowsServiceIdentityConfigured
+  register: ssrs_account
+
+- name: SSRS Service Account
+  debug:
+    var: ssrs_account.stdout_lines
+
+- name: Configure SSRS change Service Account
+  win_shell: |
+    $sqlInstanceName = 'SSRS'
+    $ns = "root\Microsoft\SqlServer\ReportServer\RS_$sqlInstanceName\v14\Admin"
+    $RSObject = Get-WmiObject -class "MSReportServer_ConfigurationSetting" -namespace "$ns"
+    # Set service account
+    $builtInServiceAccount = "Builtin\NetworkService"
+    $useBuiltInServiceAccount = $true
+    $RSObject.SetWindowsServiceIdentity($useBuiltInServiceAccount, $builtInServiceAccount, "") | out-null
+    # Restart service
+    $serviceName = $RSObject.ServiceName
+    Restart-Service -Name $serviceName -Force 
+  when: '"NetworkService" not in ssrs_account.stdout'
+
+- name: Configure SSRS database and URL
+  win_dsc:
+    resource_name:                SqlRS
+    InstanceName:                 SSRS
+    DatabaseServerName:           '{{ dpm_mssql_engine_server_name }}'
+    DatabaseInstanceName:         '{{ dpm_mssql_engine_instance_name }}'
+    #ReportServerVirtualDirectory:  '{{ ssrs_virtual_directory }}'
+    PsDscRunAsCredential_username: '{{ ansible_user }}'
+    PsDscRunAsCredential_password: '{{ ansible_password }}'
+    ReportsVirtualDirectory:       '{{ ssrs_virtual_directory }}'
+    # ReportServerReservedUrl:       'http://+:80'
+    #ReportsReservedUrl:            'http://+:80'
+
+# - name: Configure SSRS change Service Account
+#   win_dsc:
+#     resource_name:                SqlServiceAccount
+#     instanceName:                 SSRS
+#     servicetype:                  'ReportingServices'
+#     ServiceAccount_username:      '{{ dpm_mssql_engine_engine_service_account }}'
+#     ServiceAccount_password:      '{{ dpm_mssql_engine_engine_service_password }}'
+#     PsDscRunAsCredential_username: '{{ ansible_user }}'
+#     PsDscRunAsCredential_password: '{{ ansible_password }}'

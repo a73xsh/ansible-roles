@@ -1,0 +1,9 @@
+---
+# defaults file for deploy_docker
+docker_prerequisite_packages_EL:
+  - "device-mapper-persistent-data"
+  - "lvm2"
+  - "python3"
+  - "python3-pip"
+  - "virtualenv"
+  - "python3-setuptools"

@@ -1,0 +1,10 @@
+---
+- name: Provision VMs
+  hosts: all
+  # tasks file for create_vm
+  pre_tasks:
+  - name: Include vm vm_env var
+    include_vars:
+      file: "{{ vm_env }}.yml"
+  roles:
+    - create_vm

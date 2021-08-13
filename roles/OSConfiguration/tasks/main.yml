@@ -1,0 +1,11 @@
+---
+# tasks file for OSConfiguration
+- include_tasks: "{{ task }}"
+  loop:
+    - features.yml
+    - rename_guest.yml
+    - services.yml
+    - firewall.yml
+    - win_config.yml
+  loop_control:
+    loop_var: task

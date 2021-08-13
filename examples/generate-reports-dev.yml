@@ -1,0 +1,17 @@
+---
+- hosts: dev-mgmt01
+  become_method: runas
+  gather_facts: no
+  vars:
+    ansible_become_password: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+
+
+  tasks:
+  - name: Generate Hyper-V reports
+    win_shell: C:\Users\Public\scripts\Hyper-V-Reporting\generate-report.ps1
+    become: yes
+    become_user: sddc.dev\svc_jenkins
+    register: powershell_out
+    ignore_errors: true
+    changed_when: "'Report created successfully.' in powershell_out.stdout"

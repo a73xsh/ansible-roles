@@ -1,0 +1,3 @@
+mcafee_package      : 'av01-dev-epo-magent563.zip'
+mcafee_download_url : http://10.35.16.16/files
+mcafee_download_link: "{{ mcafee_download_url }}/{{ mcafee_package }}"

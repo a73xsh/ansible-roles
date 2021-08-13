@@ -1,0 +1,51 @@
+---
+- name: Set timezone
+  win_timezone:
+    timezone: "{{ OSTimeZone }}"
+
+- name: Enable RDP
+  win_dsc:
+    resource_name: RemoteDesktopAdmin
+    Ensure: Present
+    UserAuthentication: Secure
+    IsSingleInstance: 'Yes'
+    PsDscRunAsCredential_username: '{{ ansible_user }}'
+    PsDscRunAsCredential_password: '{{ ansible_password }}'
+
+- name: Change power plan to high performance
+  win_power_plan:
+    name: high performance
+
+- name: Get PDC domain controller
+  win_shell:  (nltest /dclist:{{ dns_domain_name }} | select-string -Pattern 'PDC' | % {$_.line.split('.')[0]}).Trim() 
+  run_once: true
+  register: pdc
+  when: "'dc_servers' in group_names"
+
+- block:
+  - name: Display PDC server
+    debug:
+      msg : "{{ pdc.stdout_lines }}" 
+  
+  - name: Set NTP Servers
+    win_shell: |
+      w32tm /config /syncfromflags:manual /manualpeerlist:"{{ntp_servers}}"
+      Restart-Service W32Time
+      w32tm.exe /resync
+    when: inventory_hostname in pdc.stdout_lines
+  when: (pdc.stdout_lines is defined) and (pdc.stdout_lines|length > 0)
+
+- name: Add Domain Group to a local group Administrators
+  win_group_membership:
+    name: Administrators
+    members:
+      - '{{ dns_domain_name }}\local-admins'
+    state: present
+  when: "'dc_servers' not in group_names"
+
+- name: Disable startup ServerManager
+  win_dsc:
+    resource_name: ScheduledTask
+    taskname: 'ServerManager'
+    taskpath: '\Microsoft\Windows\Server Manager\'
+    enable: false

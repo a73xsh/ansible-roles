@@ -1,0 +1,25 @@
+---
+- name: Install Common Windows Features
+  win_feature:
+    name:
+    - RSAT-AD-PowerShell
+    - RSAT-Clustering-Powershell
+    - Hyper-V-PowerShell
+    state: present
+  ignore_errors: yes
+
+- name: Remove Windows Features
+  win_feature:
+    name:
+    - Windows-Defender
+    state: Absent
+  ignore_errors: yes
+
+- name: Install DSC Modules
+  win_psmodule: name={{ item }} state=present
+  with_items:
+    - xHyper-V
+    - ComputerManagementDsc
+    - NetworkingDsc
+    - DSCR_MSLicense
+

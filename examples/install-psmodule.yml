@@ -1,0 +1,10 @@
+---
+- hosts: all
+  tasks:
+  - name: Powershell | Install Required Powershell Modules
+    win_psmodule: name={{ item }} state=present
+    with_items:
+      - xHyper-V
+      - ComputerManagementDsc
+      - NetworkingDsc
+      - DSCR_MSLicense

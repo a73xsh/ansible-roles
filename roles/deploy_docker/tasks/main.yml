@@ -1,0 +1,41 @@
+---
+# tasks file for deploy_docker
+- name: Install prerequisite packages
+  yum:
+    name: "{{ docker_prerequisite_packages_EL }}"
+    state: present
+
+- name: Import Docker CE repository gpg key
+  rpm_key:
+    key: https://download.docker.com/linux/centos/gpg
+    state: present
+
+- name: Add Docker CE repository
+  get_url:
+    url: https://download.docker.com/linux/centos/docker-ce.repo
+    dest: /etc/yum.repos.d/docker-ce.repo
+    force: yes
+    owner: root
+    group: root
+    mode: 0644
+
+- name: install container.io 
+  dnf:
+    name: 'https://download.docker.com/linux/centos/7/x86_64/stable/Packages/containerd.io-1.2.13-3.2.el7.x86_64.rpm'
+    state: present
+
+- name: Install Docker Module for Python
+  pip:
+    name: docker
+
+- name: Install Docker CE
+  yum:
+    name: docker-ce
+    state: present
+    update_cache: yes
+
+- name: Enable Docker CE servise on start
+  service:
+    name: docker
+    state: started
+    enabled: yes

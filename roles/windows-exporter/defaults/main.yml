@@ -1,0 +1,5 @@
+---
+# defaults file for windows-exporter
+win_exporter_download_link: 'https://github.com/prometheus-community/windows_exporter/releases/download/v0.13.0/windows_exporter-0.13.0-amd64.msi'
+win_exporter_temp_dir     : 'c:\temp\win-exporter'
+win_exporter_package_name : "windows_exporter-0.13.0-amd64.msi"

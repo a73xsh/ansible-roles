@@ -1,0 +1,4 @@
+---
+# defaults file for copy_dscresources
+hv_key     : ""
+server_key : ""

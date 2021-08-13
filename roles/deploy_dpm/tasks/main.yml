@@ -1,0 +1,19 @@
+---
+# tasks file for deploy_dpm
+- name: Include vm env var
+  include_vars:
+    file: "{{env}}.yml"
+
+- name: Powershell | Install Required Powershell Modules
+  win_psmodule: name={{ item }} state=present
+  with_items:
+    - SqlServerDsc
+    - xSCDPM
+
+- include_tasks: "{{ task }}"
+  loop:
+    - mssql.yml
+    - ssrs.yml
+    - dpm.yml
+  loop_control:
+    loop_var: task

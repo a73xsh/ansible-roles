@@ -1,0 +1,6 @@
+---
+# handlers file for deploy_docker
+- name: Start Docker CE service
+  service:
+    name: docker
+    state: started

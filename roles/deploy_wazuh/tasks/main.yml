@@ -1,0 +1,51 @@
+---
+# tasks file for deploy_wazuh
+- name: Include vm env var
+  include_vars:
+    file: "{{env}}.yml"
+    
+- name: Check for Wazuh agent service...
+  win_service:
+    name: "OssecSvc"
+  register: svc
+
+- block:
+  - name: Create Wazuh folders as needed...
+    win_file:
+      path: '{{ wazuh_temp_dir }}'
+      state: directory
+
+  - name: Copy Wazuh archive...
+    win_get_url:
+      url:  '{{ wazuh_download_link }}'
+      dest: '{{ wazuh_temp_dir }}'
+      timeout: 300
+
+  - name: Wazuh agent installation...
+    win_package:
+      path: '{{ wazuh_temp_dir }}\{{ wazuh_package }}'
+      state: present
+      arguments: '/q WAZUH_MANAGER="{{ WazuhManager }}" WAZUH_REGISTRATION_SERVER="{{ WazhuRegistrationServer }}" WAZUH_REGISTRATION_PASSWORD="{{ WazuhRegistrationPassword }}" WAZUH_AGENT_NAME="{{ ansible_fqdn }}" WAZUH_AGENT_GROUP="{{ WazuhAgentGroup }}" WAZUH_PROTOCOL="{{ WazuhProtocol }}"'
+      creates_service: OssecSvc
+    register: result
+    retries: 3
+    delay: 60
+  
+  - name: Verify the Wazuh service...
+    win_service:
+      name: "OssecSvc"
+      state: started
+    register: svc_2
+
+  - name: Set installation results output string...
+    set_fact:
+      my_msg: "{{ svc_2.display_name }} - ended with return code: {{ result.rc }}."
+
+  - name: Write result return code to agent audit log...
+    win_shell: Add-Content -Path "{{ wazuh_temp_dir }}Audit.txt" -Value "{{ my_msg }}" -Force
+
+  - debug:
+      msg: "Wazuh setup exited with code: {{ result.rc }}."
+
+  when: svc.exists == false
+

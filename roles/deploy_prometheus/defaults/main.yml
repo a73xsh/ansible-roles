@@ -1,0 +1,57 @@
+---
+# defaults file for deploy_prometheus
+prometheus_static_targets:
+  - 'localhost:9090'
+
+prometheus_targets: []
+
+prometheus_sd_targets: []
+
+# https://github.com/prometheus/alertmanager#example
+# When a new group of alerts is created by an incoming alert, wait at
+# least 'group_wait' to send the initial notification.
+prometheus_alert_group_wait: 30s
+
+# When the first notification was sent, wait 'group_interval' to send a batch
+# of new alerts that started firing for that group.
+prometheus_alert_group_interval: 5m
+
+# If an alert has successfully been sent, wait 'repeat_interval' to
+# resend them.
+prometheus_alert_repeat_interval: 3h
+
+
+# Default times for scrape failures
+prometheus_alertmanager_instance_down_warn: 5s
+prometheus_alertmanager_instance_down_error: 2m
+
+# Slack
+prometheus_alertmanager_slack_webhook: "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
+prometheus_alertmanager_slack_channel: "#random"
+
+# Windows exporter
+prometheus_hyperv_targets:
+  - 192.168.86.159:9182
+
+# External ports, set to 0 to disable
+prometheus_port: 9090
+prometheus_alertmanager_port: 9093
+
+# Additional command line arguments for prometheus
+prometheus_additional_command_args: ''
+
+# Additional command line arguments for alertmanager
+prometheus_alertmanager_additional_command_args: ''
+
+# Docker network for prometheus components
+prometheus_docker_network: prometheus
+
+
+# Prometheus component versions
+prometheus_version: 2.19.2
+prometheus_alertmanager_version: 0.21.0
+
+# Grafana 
+grafana_docker_image: "grafana/grafana"
+grafana_port: 3000
+

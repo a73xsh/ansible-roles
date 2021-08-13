@@ -1,0 +1,5 @@
+---
+- name: MS Activation
+  hosts: all
+  roles:
+   - msactivation

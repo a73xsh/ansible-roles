@@ -1,0 +1,102 @@
+---
+- name: Create VM folder
+  win_file:
+      path: '{{ item.vm_path }}\{{ item.name }}'
+      state: directory
+  with_items: "{{ vms }}"
+  
+- name: Check whether vhdx already exists
+  win_stat:
+    path: "{{item.dest_vhd}}"
+  with_items: "{{ vms }}"
+  register: file_info
+
+#- debug: var=file_info.results
+
+- name: Clone vhdx 
+  win_copy:
+    src: "{{item.item.src_vhd}}"
+    dest: "{{item.item.dest_vhd}}"
+    remote_src: True
+  with_items: "{{ file_info.results }}"
+  when: item.stat.exists == false
+     
+- name: Create VMs
+  win_dsc:
+    resource_name: xVMHyperV
+    name: "{{ item.name }}"
+    vhdpath: "{{ item.dest_vhd }}"
+    state: "Running"
+    path: "{{ item.vm_path }}"
+    startupmemory: "{{ item.memory }}"
+    switchname: "{{ item.network_switch }}"
+    processorcount: "{{ item.cpu }}"
+    generation: "{{ item.generation }}"
+    AutomaticCheckpointsEnabled: "{{ AutomaticCheckpointsEnabled }}"
+    PsDscRunAsCredential_username: '{{ ansible_user }}'
+    PsDscRunAsCredential_password: '{{ ansible_password }}'
+  with_items: "{{ vms }}"
+  register: new_vms
+
+- name: Gathering NetAdapter properties
+  win_shell: |
+    $ErrorActionPreference = "SilentlyContinue"
+    (Get-VMNetworkAdapter -VMName {{ item.name }} -Name 'Network Adapter' | select ID).ID
+  with_items: "{{ vms }}"
+  register: vm_netadapter
+
+- name: Configure VMs IP
+  win_dsc:
+    resource_name: xVMNetworkAdapter
+    id:  vm_netadapter
+    name: 'Network Adapter'
+    vmname: "{{ item.name }}"
+    vlanid: "{{ item.network.vlanid }}"
+    switchname: "{{ item.network_switch }}"
+    NetworkSetting:
+      ipaddress: "{{item.network.ip}}"
+      subnet: "{{item.network.netmask}}"
+      DefaultGateway: "{{item.network.gateway}}"
+      DnsServer: "{{item.network.dns}}"
+    PsDscRunAsCredential_username: '{{ ansible_user }}'
+    PsDscRunAsCredential_password: '{{ ansible_password }}'
+  with_items: "{{ vms }}"
+  changed_when: vm_netadapter != ""
+
+- name: Configure NestedVirtualization 
+  win_dsc:
+    resource_name: xVMProcessor
+    vmname: "{{ item.name }}"
+    restartifneeded: "true"
+    ExposeVirtualizationExtensions: "{{ item.exposevirtualizationextensions }}"
+    PsDscRunAsCredential_username: '{{ ansible_user }}'
+    PsDscRunAsCredential_password: '{{ ansible_password }}'
+  when: (item.exposevirtualizationextensions is defined) and (item.exposevirtualizationextensions|length > 0)
+  with_items: "{{ vms }}"
+
+- name: Disable Time Synchronization
+  win_shell: Get-VMIntegrationService -VMName {{ item.name }} -Name "Time Synchronization" | Disable-VMIntegrationService
+  with_items: "{{ vms }}"
+
+- name: Add VM to Cluster
+  win_shell: |-
+    if ( !( Get-ClusterResource -Cluster {{ item.cluster }} -Name "Virtual Machine {{ item.name }}" -erroraction 'ignore' ) ) {
+      Add-ClusterVirtualMachineRole -VMName {{ item.name }} -Cluster {{ item.cluster }} }
+  when: (item.cluster is defined) and (item.cluster|length > 0)
+  with_items: "{{ vms }}"
+
+- add_host:
+    name: "{{ item.item.network.ip }}"
+    ansible_connection: winrm
+    ansible_host: "{{ item.item.network.ip }}"
+    groups: "{{item.item.type}}" 
+  with_items: "{{ new_vms.results }}"
+
+# wait_for_connection, needs to be in another play because 
+# it uses the current inventory in this play
+- name: Wait for VM to be running
+  win_wait_for:
+    host: "{{ item.network.ip }}"
+    port: "{{ ansible_port }}" 
+    timeout: 900
+  with_items: "{{ vms }}"

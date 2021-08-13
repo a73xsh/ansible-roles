@@ -1,0 +1,47 @@
+---
+# tasks file for deploy_qualys
+- name: Check for Qualys agent service...
+  win_service:
+    name: "QualysAgent"
+  register: svc
+
+- block:
+  - name: Create Qualys folders as needed...
+    win_file:
+      path: '{{ qualys_temp_dir }}'
+      state: directory
+
+  - name: Copy Qualys archive...
+    win_get_url:
+      url:  '{{ qualys_download_link }}'
+      dest: '{{ qualys_temp_dir }}'
+      timeout: 300
+
+  - name: Qualys agent installation...
+    win_package:
+      path: '{{ qualys_temp_dir }}\{{ qualys_package }}'
+      state: present
+      arguments: "CustomerId={{ QualysCustomerId }} ActivationId={{ QualysActivationId }}"
+      creates_service: QualysAgent
+    register: result
+    retries: 3
+    delay: 60
+  
+  - name: Verify the Qualys service...
+    win_service:
+      name: "QualysAgent"
+      state: started
+    register: svc_2
+
+  - name: Set installation results output string...
+    set_fact:
+      my_msg: "{{ svc_2.display_name }} - ended with return code: {{ result.rc }}."
+
+  - name: Write result return code to agent audit log...
+    win_shell: Add-Content -Path "{{ qualys_temp_dir }}Audit.txt" -Value "{{ my_msg }}" -Force
+
+  - debug:
+      msg: "Qualys setup exited with code: {{ result.rc }}."
+
+  when: svc.exists == false
+

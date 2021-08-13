@@ -1,0 +1,6 @@
+---
+# defaults file for deploy_wazuh
+wazuh_package      : 'wazuhagent.msi'
+wazuh_download_url : http://10.35.16.16/files
+wazuh_download_link: "{{ wazuh_download_url }}/{{ wazuh_package }}"
+wazuh_temp_dir     : 'c:\temp\wazuh\'

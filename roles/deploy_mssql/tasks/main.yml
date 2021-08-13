@@ -1,0 +1,92 @@
+---
+# tasks file for deploy_mssql
+- name: Include vm env var
+  include_vars:
+    file: "{{env}}.yml"
+
+- name: Check Mandatory variables
+  fail:
+    msg: '{{ item }} is mandatory'
+  when: item is undefined
+  with_items:
+  - 'win_mssql_engine_iso_path'
+  - 'win_mssql_engine_engine_service_account'
+  - 'win_mssql_engine_system_admins'
+
+- name: Create MSSQL temp folders as needed...
+  win_file:
+    path: '{{ win_mssql_engine_temp_dir }}'
+    state: directory
+
+- name: Check whether ISO already exists
+  win_stat:
+    path: '{{ win_mssql_engine_temp_dir }}\{{ mssql_iso }}'
+  register: file_info
+
+#- debug: var=file_info.results
+
+- name: Windows | Install .NET Framework 4.5 Features
+  win_feature:
+    name: NET-Framework-45-Features
+    state: present
+    include_sub_features: True
+
+- name: Copy ISO MSSQL 
+  win_copy:
+    src: "{{ mssql_src_path }}"
+    dest: '{{ win_mssql_engine_temp_dir }}\{{ mssql_iso }}'
+    remote_src: True
+  when:
+    - not file_info.stat.exists
+
+- name: Mount iso file
+  block:
+  - name: Mount the SQL Server iso 
+    win_disk_image:
+      image_path: '{{ win_mssql_engine_temp_dir }}\{{ mssql_iso }}'
+      state: present
+    register: disk_image_result
+
+  - name: Display mount image result
+    debug:
+      var: disk_image_result       
+
+- name: install sql server
+  win_dsc:
+    resource_name:          SqlSetup
+    Action:                 Install
+    InstanceName:           '{{ win_mssql_engine_instance_name }}'
+    Features:               '{{ win_mssql_engine_features }}'
+    SQLCollation:           '{{ win_mssql_engine_collation }}'
+    SQLSvcAccount_username: '{{ win_mssql_engine_engine_service_account }}'
+    SQLSvcAccount_password: '{{ win_mssql_engine_engine_service_password }}'
+    AgtSvcAccount_username: '{{ win_mssql_engine_engine_service_account }}'
+    AgtSvcAccount_password: '{{ win_mssql_engine_engine_service_password }}'
+    SQLSysAdminAccounts:    '{{ win_mssql_engine_system_admins }}'
+    InstallSharedDir:       '{{ win_mssql_engine_install_shared_dir }}'
+    InstallSharedWOWDir:    '{{ win_mssql_engine_install_shared_wow_dir }}'
+    InstanceDir:            '{{ win_mssql_engine_instance_dir }}'
+    InstallSQLDataDir:      '{{ win_mssql_engine_sql_data_dir }}'
+    SQLUserDBDir:           '{{ win_mssql_engine_sql_user_db_dir }}'
+    SQLUserDBLogDir:        '{{ win_mssql_engine_sql_user_db_log_dir }}'
+    SQLTempDBDir:           '{{ win_mssql_engine_sql_temp_db_dir }}'
+    SQLTempDBLogDir:        '{{ win_mssql_engine_sql_temp_db_log_dir }}'
+    SQLBackupDir:           '{{ win_mssql_engine_backup_dir }}'
+    SourcePath:             '{{ disk_image_result.mount_path }}'
+    UpdateEnabled:          '{{ win_mssql_engine_update_enabled }}'
+    ForceReboot:            false
+    BrowserSvcStartupType:  '{{ win_mssql_engine_browser_startup_type }}'
+    PsDscRunAsCredential_username: '{{ ansible_user }}'
+    PsDscRunAsCredential_password: '{{ ansible_password }}'
+
+- name: Activate Windows Firewall rules
+  win_dsc:
+    resource_name:  SqlWindowsFirewall
+    SourcePath:     '{{ disk_image_result.mount_path }}'
+    InstanceName:   '{{ win_mssql_engine_instance_name }}'
+    Features:       '{{ win_mssql_engine_features }}'
+
+- name: Unmount ISO
+  win_disk_image:
+    image_path: '{{ win_mssql_engine_temp_dir }}\{{ mssql_iso }}'
+    state: absent

@@ -1,0 +1,5 @@
+---
+- name: Deploy Qualys Agent
+  hosts: all
+  roles:
+   - deploy_qualys

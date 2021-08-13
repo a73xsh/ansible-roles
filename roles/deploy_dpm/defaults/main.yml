@@ -1,0 +1,32 @@
+---
+# defaults file for deploy_dpm
+dpm_mssql_engine_action:                    'install'
+
+dpm_mssql_engine_instance_name:             'MSSQLSERVER'
+dpm_mssql_engine_server_name:               '{{ inventory_hostname }}'
+
+dpm_mssql_engine_features:                  'SQLENGINE,CONN'
+dpm_mssql_engine_collation:                 'SQL_Latin1_General_CP1_CI_AS' 
+
+dpm_mssql_engine_temp_dir:                  'C:\Temp'
+
+dpm_mssql_engine_install_shared_dir:        'C:\Program Files\Microsoft SQL Server'
+dpm_mssql_engine_install_shared_wow_dir:    'C:\Program Files (x86)\Microsoft SQL Server'
+
+dpm_mssql_engine_instance_dir:              'C:\Program Files\Microsoft SQL Server'
+dpm_mssql_engine_sql_data_dir:              'C:\Program Files\Microsoft SQL Server\MSSQL14.MSSQLSERVER\MSSQL\Data'
+dpm_mssql_engine_sql_user_db_dir:           '{{ dpm_mssql_engine_sql_data_dir }}'
+dpm_mssql_engine_sql_user_db_log_dir:       '{{ dpm_mssql_engine_sql_data_dir }}'
+dpm_mssql_engine_sql_temp_db_dir:           '{{ dpm_mssql_engine_sql_data_dir }}'
+dpm_mssql_engine_sql_temp_db_log_dir:       '{{ dpm_mssql_engine_sql_data_dir }}'
+dpm_mssql_engine_backup_dir:                'C:\Program Files\Microsoft SQL Server\MSSQL14.MSSQLSERVER\MSSQL\Backup'
+
+dpm_mssql_engine_install_log:               'C:\Program Files\Microsoft SQL Server\140\Setup Bootstrap\Log\Summary.txt'
+
+dpm_mssql_engine_update_enabled:            false
+dpm_mssql_engine_browser_startup_type:      'Automatic'
+
+dpm_mssql_engine_install_management_studio: false
+
+dpm_mssql_engine_engine_service_account:    '{{ dns_domain_name }}\sql-svc'
+dpm_mssql_engine_system_admins:             '{{ dns_domain_name }}\sql-admins'

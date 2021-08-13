@@ -1,0 +1,42 @@
+vms:
+  - type: wac_servers
+    name: "dev-wac01.sddc.dev"
+    generation: "2"
+    cluster: "DEV-CL-001"
+    cpu: 2   
+    memory: 4294967296
+
+    network:
+      vlanid: 16
+      ip: 10.35.16.47
+      netmask: 255.255.255.0
+      gateway: 10.35.16.1
+      dns: 10.35.16.40
+      
+    network_switch: 'dev-sw-01' 
+    
+    os_vhd: "dev-wac01.sddc.dev_OSDisk.vhdx"
+    vm_path: "C:\\ClusterStorage\\dev-xio-001-004"
+    src_vhd: "\\\\dev-sofs\\VMM-Library\\VHDs\\Win2019_STDGUI_07052020_Infra.vhdx"
+    dest_vhd: "C:\\ClusterStorage\\dev-xio-001-004\\dev-wac01.sddc.dev\\dev-wac01.sddc.dev_OSDisk.vhdx"
+
+  - type: wac_servers
+    name: "dev-wac02.sddc.dev"
+    generation: "2"
+    cluster: "DEV-CL-001"
+    cpu: 2   
+    memory: 4294967296
+
+    network:
+      vlanid: 16
+      ip: 10.35.16.48
+      netmask: 255.255.255.0
+      gateway: 10.35.16.1
+      dns: 10.35.16.40
+      
+    network_switch: 'dev-sw-01' 
+    
+    os_vhd: "dev-wac02.sddc.dev_OSDisk.vhdx"
+    vm_path: "C:\\ClusterStorage\\dev-xio-001-004"
+    src_vhd: "\\\\dev-sofs\\VMM-Library\\VHDs\\Win2019_STDGUI_07052020_Infra.vhdx"
+    dest_vhd: "C:\\ClusterStorage\\dev-xio-001-004\\dev-wac02.sddc.dev\\dev-wac02.sddc.dev_OSDisk.vhdx"

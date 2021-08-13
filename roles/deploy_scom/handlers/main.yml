@@ -1,0 +1,7 @@
+---
+# handlers file for deploy_scom
+- name: restart win SCOM agent
+  win_service:
+    name: HealthService
+    state: restarted
+    enabled: yes

@@ -1,0 +1,14 @@
+[OPTIONS]
+UserName= '{{ domain_admin_user }}'
+CompanyName=TEST
+ProductKey=XXXXXXXXXXXXXXXXXXX
+SqlAccountPassword= '{{ dpm_mssql_engine_engine_service_password }}'
+IntegratedInstallSource=c:\temp\dpm\
+SQLMachineName= '{{ dpm_mssql_engine_server_name }}'
+SQLInstanceName= '{{ dpm_mssql_engine_instance_name }}'
+SQLMachineUserName= '{{ dpm_mssql_engine_engine_service_account }}'
+SQLMachinePassword= '{{ dpm_mssql_engine_engine_service_password }}'
+ReportingMachineName= '{{ dpm_mssql_engine_server_name }}'
+ReportingInstanceName=SSRS
+ReportingMachineUserName= '{{ dpm_mssql_engine_engine_service_account }}'
+ReportingMachinePassword= '{{ dpm_mssql_engine_engine_service_password }}'

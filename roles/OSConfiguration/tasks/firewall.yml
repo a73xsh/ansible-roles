@@ -1,0 +1,222 @@
+---
+# Enable ping request
+- name: Firewall rule to allow ICMP v4 (ping)
+  win_firewall_rule:
+    name: File and Printer Sharing (Echo Request - ICMPv4-In)
+    enabled: yes
+    state: present
+    action: allow
+    direction: in
+
+- name: Firewall rule to allow ICMP v4 (ping)
+  win_firewall_rule:
+    name: File and Printer Sharing (Echo Request - ICMPv4-Out)
+    enabled: yes
+    state: present
+    action: allow
+    direction: out
+
+#  Enable remote volume management 
+- name: Inbound rule for the Remote Volume Management - Virtual Disk Service to be remotely managed via RPC/TCP
+  win_firewall_rule:
+    name: Remote Volume Management - Virtual Disk Service (RPC)
+    enabled: yes
+    state: present
+    action: allow
+    direction: in
+
+- name: Inbound rule for the Remote Volume Management - Virtual Disk Service Loader to be remotely managed via RPC/TCP
+  win_firewall_rule:
+    name: Remote Volume Management - Virtual Disk Service Loader (RPC)
+    enabled: yes
+    state: present
+    action: allow
+    direction: in
+
+- name: Inbound rule for the RPCSS service to allow RPC/TCP traffic for Remote Volume Management
+  win_firewall_rule:
+    name: Remote Volume Management (RPC-EPMAP)
+    enabled: yes
+    state: present
+    action: allow
+    direction: in
+
+#  Enable remote service management
+- name: Inbound rule for the local Service Control Manager to be remotely managed via RPC/TCP
+  win_firewall_rule:
+    name: Remote Service Management (RPC)
+    enabled: yes
+    state: present
+    action: allow
+    direction: in
+
+- name: Inbound rule for the local Service Control Manager to be remotely managed over Named Pipes
+  win_firewall_rule:
+    name: Remote Service Management (NP-In)
+    enabled: yes
+    state: present
+    action: allow
+    direction: in
+
+- name: Inbound rule for the RPCSS service to allow RPC/TCP traffic for the local Service Control Manager
+  win_firewall_rule:
+    name: Remote Service Management (RPC-EPMAP)
+    enabled: yes
+    state: present
+    action: allow
+    direction: in
+
+#  Enable Remote Event Log Management
+- name: Inbound rule for the local Event Log service to be remotely managed via RPC/TCP
+  win_firewall_rule:
+    name: Remote Event Log Management (RPC)
+    enabled: yes
+    state: present
+    action: allow
+    direction: in
+
+- name: Inbound rule for the local Event Log service to be remotely managed over Named Pipes
+  win_firewall_rule:
+    name: Remote Event Log Management (NP-In)
+    enabled: yes
+    state: present
+    action: allow
+    direction: in
+
+- name: Inbound rule for the RPCSS service to allow RPC/TCP traffic for the local Event Log Service
+  win_firewall_rule:
+    name: Remote Event Log Management (RPC-EPMAP)
+    enabled: yes
+    state: present
+    action: allow
+    direction: in
+
+#  Enable Remote Scheduled Tasks Management
+- name: Inbound rule for the Task Scheduler service to be remotely managed via RPC/TCP
+  win_firewall_rule:
+    name: Remote Scheduled Tasks Management (RPC)
+    enabled: yes
+    state: present
+    action: allow
+    direction: in
+
+- name: Inbound rule for the RPCSS service to allow RPC/TCP traffic for the Task Scheduler service
+  win_firewall_rule:
+    name: Remote Scheduled Tasks Management (RPC-EPMAP)
+    enabled: yes
+    state: present
+    action: allow
+    direction: in
+
+#  Enable Windows Firewall Remote Management
+- name: Inbound rule for the Windows Defender Firewall to be remotely managed via RPC/TCP
+  win_firewall_rule:
+    name: Windows Defender Firewall Remote Management (RPC)
+    enabled: yes
+    state: present
+    action: allow
+    direction: in
+
+- name: Inbound rule for the RPCSS service to allow RPC/TCP traffic for the Windows Defender Firewall
+  win_firewall_rule:
+    name: Windows Defender Firewall Remote Management (RPC-EPMAP)
+    enabled: yes
+    state: present
+    action: allow
+    direction: in
+
+#  Enable WMI management requests in
+- name: Inbound rule to allow WMI traffic for remote Windows Management Instrumentation. TCP
+  win_firewall_rule:
+    name: Windows Management Instrumentation (WMI-In)
+    enabled: yes
+    state: present
+    action: allow
+    direction: in
+
+#  Enable Remote Shutdown
+- name: Inbound rule for the Remote Shutdown via dynamic RPC/TCP
+  win_firewall_rule:
+    name: Inbound Rule for Remote Shutdown (TCP-In)
+    enabled: yes
+    state: present
+    action: allow
+    direction: in
+
+#  Enable Remote Desktop rules for all profiles
+- name: Inbound rule for the Remote Desktop service to allow RDP traffic. TCP 3389
+  win_firewall_rule:
+    name: Remote Desktop - User Mode (TCP-In)
+    enabled: yes
+    state: present
+    action: allow
+    direction: in
+
+- name: Inbound rule for the Remote Desktop service to allow RDP traffic. UDP 3389
+  win_firewall_rule:
+    name: Remote Desktop - User Mode (UDP-In)
+    enabled: yes
+    state: present
+    action: allow
+    direction: in
+
+# SQL Server settings
+- name: Firewall Rule for SQL Server. TCP 1433
+  win_firewall_rule:
+    name: Firewall Rule for SQL Server
+    localport: 1433
+    protocol: tcp
+    enabled: yes
+    state: present
+    action: allow
+    profile: domain,private
+    direction: in
+  when: "'sql_servers' in group_names"
+
+- name: Firewall Rule for SQL Server. TCP 4022
+  win_firewall_rule:
+    name: SQL Service Broker
+    localport: 4022
+    protocol: tcp
+    enabled: yes
+    state: present
+    action: allow
+    profile: domain,private
+    direction: in
+  when: "'sql_servers' in group_names"
+
+- name: Firewall Rule for SQL Server. TCP 5022
+  win_firewall_rule:
+    name: SQL Always On
+    localport: 5022
+    protocol: tcp
+    enabled: yes
+    state: present
+    action: allow
+    profile: domain,private
+    direction: in
+  when: "'sql_servers' in group_names"
+
+- name: Firewall Rule for SQL Server. TCP 2383
+  win_firewall_rule:
+    name: SQL Analysis Services
+    localport: 2383
+    protocol: tcp
+    enabled: yes
+    state: present
+    action: allow
+    profile: domain,private
+    direction: in
+  when: "'sql_servers' in group_names"
+
+- name: Firewall Rule for SQL Server. TCP 2382
+  win_firewall_rule:
+    name: SQL Browser
+    localport: 2382
+    protocol: tcp
+    enabled: yes
+    state: present
+    action: allow
+    profile: domain,private
+    direction: in
+  when: "'sql_servers' in group_names"

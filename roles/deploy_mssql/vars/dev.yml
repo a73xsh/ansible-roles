@@ -1,0 +1,7 @@
+mssql_iso: "SQL-Std-2017.ISO"
+mssql_src_path: "\\\\dev-sofs\\VMM-Library\\ISOs\\SQL-Std-2017.ISO"
+win_mssql_engine_agent_service_password: !vault |
+                                            $ANSIBLE_VAULT;1.1;AES256
+
+win_mssql_engine_engine_service_password: !vault |
+                                            $ANSIBLE_VAULT;1.1;AES256

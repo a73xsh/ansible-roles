@@ -1,0 +1,5 @@
+---
+- name: OS Configuration
+  hosts: all
+  roles:
+   - OSConfiguration

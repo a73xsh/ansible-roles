@@ -1,0 +1,101 @@
+---
+# tasks file for deploy_mssql
+- name: Check whether ISO already exists
+  win_stat:
+    path: '{{ dpm_mssql_engine_temp_dir }}\{{ dpm_iso }}'
+  register: file_info
+
+#- debug: var=file_info.results
+
+- name: Copy ISO DPM 
+  win_copy:
+    src: "{{ dpm_src_path }}"
+    dest: '{{ dpm_mssql_engine_temp_dir }}\{{ dpm_iso }}'
+    remote_src: True
+  when:
+    - not file_info.stat.exists
+
+- name: Mount iso file
+  block:
+  - name: Mount the DPM Server iso 
+    win_disk_image:
+      image_path: '{{ dpm_mssql_engine_temp_dir }}\{{ dpm_iso }}'
+      state: present
+    register: disk_image_result
+
+  - name: Display mount image result
+    debug:
+      var: disk_image_result
+
+# - name: Extract DPM files
+#   win_package:
+#     path: '{{ disk_image_result.mount_path }}SCDPM_2019.exe'
+#     product_id: Setup
+#     creates_path: 'c:\temp\dpm\Setup.exe'
+#     arguments: '/SILENT /LOG="c:\temp\dpm\dpm.log" /DIR="C:\temp\dpm"'
+#     state: present
+- name: Create DPM temp folders as needed...
+  win_file:
+    path: '{{ dpm_mssql_engine_temp_dir }}\dpm'
+    state: directory
+
+- name: Extract DPM files
+  win_command: '{{ disk_image_result.mount_path }}SCDPM_2019.exe /SILENT /LOG=c:\temp\dpm\dpm.log /DIR=C:\temp\dpm'
+  args:
+    creates: c:\temp\dpm\Setup.exe
+
+- name: Unmount ISO
+  win_disk_image:
+    image_path: '{{ dpm_mssql_engine_temp_dir }}\{{ dpm_iso }}'
+    state: absent
+
+- name: Install Common Windows Features
+  win_feature:
+    name:
+     - Hyper-V
+    state: present
+  ignore_errors: yes
+
+- name: Copy install answer file
+  win_template:
+    src: DPMSetup.ini.j2
+    dest: '{{ dpm_mssql_engine_temp_dir }}\dpm\DPMSetup.ini'
+
+- name: Validate that the netlogon service has started, before running the next task
+  win_reboot:
+    test_command: 'exit (Get-Service -Name Netlogon).Status -ne "Running"'
+
+- name: Check for SCOM agent service...
+  win_service:
+    name: "MSDPM"
+  register: svc
+
+- block:
+  - name: Install DPM Server
+    win_command: 'cmd.exe /c start /wait C:\temp\dpm\setup.exe /i /f C:\temp\dpm\DPMSetup.ini /l C:\temp\dpm\dpmInstalllog.txt'
+    vars:
+      ansible_become: yes
+      ansible_become_method: runas
+      ansible_become_user: '{{ domain_admin_user }}'
+      ansible_become_password: '{{ domain_admin_password }}'
+
+  when: svc.exists == false
+
+# - name: Install DPM Server
+#   win_dsc:
+#     resource_name:                       xSCDPMServerSetup
+#     ensure:                              'Present'
+#     sourcepath:                          'c:\temp\'
+#     sourcefolder:                        'dpm'
+#     SetupCredential_username:            '{{ domain_admin_user }}'
+#     SetupCredential_password:            '{{ domain_admin_password }}'
+#     YukonMachineName:                    '{{ dpm_mssql_engine_server_name }}'
+#     YukonInstanceName:                   '{{ dpm_mssql_engine_instance_name }}'
+#     ReportingMachineName:                '{{ dpm_mssql_engine_server_name }}'
+#     ReportingInstanceName:               'SSRS'
+#     YukonMachineCredential_username:     '{{ dpm_mssql_engine_engine_service_account }}'
+#     YukonMachineCredential_password:     '{{ dpm_mssql_engine_engine_service_password }}'
+#     ReportingMachineCredential_username: '{{ dpm_mssql_engine_engine_service_account }}'
+#     ReportingMachineCredential_password: '{{ dpm_mssql_engine_engine_service_password }}'
+#     PsDscRunAsCredential_username:       '{{ ansible_user }}'
+#     PsDscRunAsCredential_password:       '{{ ansible_password }}'

@@ -1,0 +1,50 @@
+---
+# tasks file for deploy_mcafee
+- name: Include vm env var
+  include_vars:
+    file: "{{env}}.yml"
+    
+- name: Check for Mcafee agent service...
+  win_service:
+    name: "masvc"
+  register: svc
+
+- block:
+  - name: Create Mcafee folders as needed...
+    win_file:
+      path: '{{ mcafee_temp_dir }}'
+      state: directory
+
+  - name: Check if Mcafee agent is already download
+    win_stat:
+      path: '{{ mcafee_temp_dir }}\{{ mcafee_package }}'
+    register: mcafee_info
+
+  - name: Copy Mcafee archive...
+    win_get_url:
+      url:  '{{ mcafee_download_link }}'
+      dest: '{{ mcafee_temp_dir }}'
+      timeout: 300
+    when:
+      - not mcafee_info.stat.exists
+
+  - name: Unzip Mcafee archive
+    win_unzip:
+      src: '{{ mcafee_temp_dir }}\{{ mcafee_package }}'
+      dest: '{{ mcafee_temp_dir }}'
+      creates: '{{ mcafee_temp_dir }}\magent563\FramePkg.exe'
+
+  - name: Mcafee agent installation...
+    win_dsc:
+      resource_name: Package
+      Name: "McAfee Agent"
+      Path: '{{ mcafee_temp_dir }}\magent563\FramePkg.exe'
+      Arguments: '/install=agent'
+      ProductId: ''
+      Ensure: Present
+    register: mcafee_epo_install
+
+- debug:
+    var: mcafee_epo_install
+  when: svc.exists == false
+

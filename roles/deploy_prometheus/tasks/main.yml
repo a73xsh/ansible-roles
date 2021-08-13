@@ -1,0 +1,164 @@
+---
+# tasks file for deploy_prometheus
+- name: prometheus | create directories
+  become:  true
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0775'
+  with_items:
+    - /etc/prometheus
+    - /etc/prometheus/rules
+    - /etc/prometheus/targets
+    - /var/lib/grafana
+    - /var/lib/grafana/plugins
+    - /etc/grafana
+    - /etc/grafana/provisioning
+    - /etc/grafana/provisioning/datasources
+    - /etc/grafana/provisioning/plugins
+    - /etc/grafana/provisioning/notifiers
+    - /etc/grafana/provisioning/dashboards
+
+- name: prometheus | grafana permissions
+  file:
+    path: /var/lib/grafana
+    owner: 472
+    group: 472
+    mode: '775'
+
+- name: prometheus | prometheus configuration file
+  become: true
+  template:
+    dest: /etc/prometheus/prometheus.yml
+    force: true
+    src: etc-prometheus-prometheus-yml.j2
+  register: prometheus_configuration
+
+- name: prometheus | prometheus alert rules
+  become: true
+  template:
+    dest: /etc/prometheus/rules/default-alert.rules.yml
+    force: true
+    src: etc-prometheus-default-alert-rules-yml.j2
+  register: prometheus_alert_rules
+
+- name: prometheus | alertmanager configuration file
+  become: true
+  template:
+    dest: /etc/prometheus/alertmanager.yml
+    force: true
+    src: etc-prometheus-alertmanager-yml.j2
+  register: prometheus_alertmanager_configuration
+
+- name: prometheus | grafana configuration file
+  become: true
+  template:
+    dest: /etc/grafana/grafana.ini
+    force: true
+    src: etc-grafana-ini.j2
+  register: grafana_configuration
+
+- name: prometheus | file sd configs
+  become: true
+  template:
+    dest: /etc/prometheus/targets/{{ item.groupname }}.yml
+    force: true
+    src: file_sd_config-template-yml.j2
+  with_items:
+    - "{{ prometheus_sd_targets }}"
+
+# Docker containers
+
+- name: prometheus | docker network
+  become: true
+  docker_network:
+    name: "{{ prometheus_docker_network }}"
+    state: present
+
+- name: prometheus | docker alertmanager
+  become: true
+  docker_container:
+    command: >
+      --config.file=/etc/prometheus/alertmanager.yml
+      --storage.path=/alertmanager
+      {{ prometheus_alertmanager_additional_command_args }}
+    image: prom/alertmanager:v{{ prometheus_alertmanager_version }}
+    name: alertmanager
+    networks:
+      - name: "{{ prometheus_docker_network }}"
+    published_ports: >-
+      {{ (prometheus_alertmanager_port > 0) |
+         ternary([(prometheus_alertmanager_port | string) + ':9093'], []) }}
+    # read_only: True
+    recreate: "{{ prometheus_alertmanager_configuration.changed }}"
+    restart_policy: always
+    state: started
+    volumes:
+      - /etc/prometheus/alertmanager.yml:/etc/prometheus/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+
+- name: prometheus | docker prometheus
+  become: true
+  docker_container:
+    command: >
+      --config.file=/etc/prometheus/prometheus.yml
+      --storage.tsdb.path=/prometheus
+      --web.console.libraries=/usr/share/prometheus/console_libraries
+      --web.console.templates=/usr/share/prometheus/consoles
+      {{ prometheus_additional_command_args }}
+    image: prom/prometheus:v{{ prometheus_version }}
+    name: prometheus
+    networks:
+      - name: "{{ prometheus_docker_network }}"
+    published_ports: >-
+      {{ (prometheus_port > 0) | ternary([(prometheus_port | string) +
+         ':9090'], []) }}
+    # read_only: True
+    recreate: >-
+      {{ prometheus_configuration.changed or prometheus_alert_rules.changed }}
+    restart_policy: always
+    state: started
+    volumes:
+      # We could mount /etc/prometheus instead but the Docker image contains
+      # additional (optional) files
+      - /etc/prometheus/rules/:/etc/prometheus/rules/:ro
+      - /etc/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - /etc/prometheus/targets/:/etc/prometheus/targets/:ro
+      - prometheus-data:/prometheus
+
+- name: prometheus | grafana
+  become: true
+  docker_container:
+    name: grafana
+    image: "{{grafana_docker_image}}"
+    state: started
+    pull: true
+    user: "472:472"
+    restart_policy: always
+    networks:
+     - name: "{{ prometheus_docker_network }}"
+    ports:
+     - "{{grafana_port}}:3000"
+    volumes:
+     - /var/lib/grafana/:/var/lib/grafana:rw
+     - /etc/grafana/:/etc/grafana:rw
+
+# In certain situations if a manual change means Prometheus in Docker
+# auto restarted but a host mounted file wasn't present it'll be auto
+# created as a directory instead of a file.
+- name: prometheus | check docker host file mounts
+  stat:
+    path: "{{ item }}"
+  with_items:
+    - /etc/prometheus/alertmanager.yml
+    - /etc/prometheus/prometheus.yml
+  register: prometheus_docker_file_mounts
+
+- name: prometheus | assert docker host file mounts
+  assert:
+    that: 'item.stat.isreg'
+  with_items: "{{ prometheus_docker_file_mounts.results }}"
+  # This is a sanity check so use no_log to reduce the excessive log output
+  # (there's nothing senstive in there)
+  # The asserts will be in the same order as the previous task
+  no_log: true

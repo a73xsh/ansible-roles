@@ -1,0 +1,5 @@
+---
+- name: Deploy Mcafee Agent
+  hosts: all
+  roles:
+   - deploy_mcafee

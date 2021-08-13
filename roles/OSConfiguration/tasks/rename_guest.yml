@@ -1,0 +1,26 @@
+---
+- block:
+  - name: Check for Local Guest, rename if found
+    win_user:
+      name: Guest
+      state: absent
+  rescue:
+  - name: Rename local Guest 2012/2008
+    win_shell: wmic useraccount where "name='Guest'" rename OS33_Guest
+    when: ('2008' in ansible_os_name) or ('2012' in ansible_os_name)
+  - name: Rename local Guest 2019/2016
+    win_shell: Rename-LocalUser -name Guest -newname OS33_Guest
+    when: ('2019' in ansible_os_name or '2016' in ansible_os_name)
+  when: "'dc_servers' not in group_names"
+
+- name: Check for & Configure OS33_Guest
+  win_user:
+    name: OS33_Guest
+    state: present
+    password: ""
+    account_disabled: yes
+    password_never_expires: yes
+    update_password: on_create
+    groups: Guests
+    groups_action: replace
+  when: "'dc_servers' not in group_names"

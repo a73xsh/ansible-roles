@@ -1,0 +1,17 @@
+---
+# tasks file for msactivation
+- name: Activate Hyper-V host
+  win_dsc:
+    resource_name: cWindowsLicense
+    Ensure: Present
+    ProductKey: "{{ hv_key }}"
+    Activate: true
+  when: "'hyperv' in group_names" 
+
+- name: Activate Management host 
+  win_dsc:
+    resource_name: cWindowsLicense
+    Ensure: Present
+    ProductKey: "{{ server_key }}"
+    Activate: true
+  when: "'mgmt_servers' in group_names"

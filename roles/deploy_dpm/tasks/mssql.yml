@@ -1,0 +1,145 @@
+---
+# tasks file for deploy_mssql
+
+- name: Check Mandatory variables
+  fail:
+    msg: '{{ item }} is mandatory'
+  when: item is undefined
+  with_items:
+  - 'dpm_mssql_engine_iso_path'
+  - 'dpm_mssql_engine_engine_service_account'
+  - 'dpm_mssql_engine_system_admins'
+
+- name: Create MSSQL temp folders as needed...
+  win_file:
+    path: '{{ dpm_mssql_engine_temp_dir }}'
+    state: directory
+
+- name: Check whether ISO already exists
+  win_stat:
+    path: '{{ dpm_mssql_engine_temp_dir }}\{{ mssql_iso }}'
+  register: file_info
+
+#- debug: var=file_info.results
+
+- name: Windows | Install .NET Framework 4.5 Features
+  win_feature:
+    name: NET-Framework-45-Features
+    state: present
+    include_sub_features: True
+
+- name: Copy ISO MSSQL 
+  win_copy:
+    src: "{{ mssql_src_path }}"
+    dest: '{{ dpm_mssql_engine_temp_dir }}\{{ mssql_iso }}'
+    remote_src: True
+  when:
+    - not file_info.stat.exists
+
+- name: Mount iso file
+  block:
+  - name: Mount the SQL Server iso 
+    win_disk_image:
+      image_path: '{{ dpm_mssql_engine_temp_dir }}\{{ mssql_iso }}'
+      state: present
+    register: disk_image_result
+
+  - name: Display mount image result
+    debug:
+      var: disk_image_result       
+
+- name: install sql server
+  win_dsc:
+    resource_name:          SqlSetup
+    Action:                 Install
+    InstanceName:           '{{ dpm_mssql_engine_instance_name }}'
+    Features:               '{{ dpm_mssql_engine_features }}'
+    SQLCollation:           '{{ dpm_mssql_engine_collation }}'
+    SQLSvcAccount_username: '{{ dpm_mssql_engine_engine_service_account }}'
+    SQLSvcAccount_password: '{{ dpm_mssql_engine_engine_service_password }}'
+    AgtSvcAccount_username: '{{ dpm_mssql_engine_engine_service_account }}'
+    AgtSvcAccount_password: '{{ dpm_mssql_engine_engine_service_password }}'
+    SQLSysAdminAccounts:    '{{ dpm_mssql_engine_system_admins }}'
+    InstallSharedDir:       '{{ dpm_mssql_engine_install_shared_dir }}'
+    InstallSharedWOWDir:    '{{ dpm_mssql_engine_install_shared_wow_dir }}'
+    InstanceDir:            '{{ dpm_mssql_engine_instance_dir }}'
+    InstallSQLDataDir:      '{{ dpm_mssql_engine_sql_data_dir }}'
+    SQLUserDBDir:           '{{ dpm_mssql_engine_sql_user_db_dir }}'
+    SQLUserDBLogDir:        '{{ dpm_mssql_engine_sql_user_db_log_dir }}'
+    SQLTempDBDir:           '{{ dpm_mssql_engine_sql_temp_db_dir }}'
+    SQLTempDBLogDir:        '{{ dpm_mssql_engine_sql_temp_db_log_dir }}'
+    SQLBackupDir:           '{{ dpm_mssql_engine_backup_dir }}'
+    SourcePath:             '{{ disk_image_result.mount_path }}'
+    UpdateEnabled:          '{{ dpm_mssql_engine_update_enabled }}'
+    ForceReboot:            false
+    AgtSvcStartupType:      'Automatic'
+    BrowserSvcStartupType:  '{{ dpm_mssql_engine_browser_startup_type }}'
+    PsDscRunAsCredential_username: '{{ ansible_user }}'
+    PsDscRunAsCredential_password: '{{ ansible_password }}'
+
+- name: Activate Windows Firewall rules
+  win_dsc:
+    resource_name:  SqlWindowsFirewall
+    SourcePath:     '{{ disk_image_result.mount_path }}'
+    InstanceName:   '{{ dpm_mssql_engine_instance_name }}'
+    Features:       '{{ dpm_mssql_engine_features }}'
+
+- name: Unmount ISO
+  win_disk_image:
+    image_path: '{{ dpm_mssql_engine_temp_dir }}\{{ mssql_iso }}'
+    state: absent
+
+- name: Firewall Rule for SQL Server. TCP 1433
+  win_firewall_rule:
+    name: Firewall Rule for SQL Server
+    localport: 1433
+    protocol: tcp
+    enabled: yes
+    state: present
+    action: allow
+    profile: domain,private
+    direction: in
+
+- name: Firewall Rule for SQL Server. TCP 4022
+  win_firewall_rule:
+    name: SQL Service Broker
+    localport: 4022
+    protocol: tcp
+    enabled: yes
+    state: present
+    action: allow
+    profile: domain,private
+    direction: in
+
+- name: Firewall Rule for SQL Server. TCP 5022
+  win_firewall_rule:
+    name: SQL Always On
+    localport: 5022
+    protocol: tcp
+    enabled: yes
+    state: present
+    action: allow
+    profile: domain,private
+    direction: in
+
+- name: Firewall Rule for SQL Server. TCP 2383
+  win_firewall_rule:
+    name: SQL Analysis Services
+    localport: 2383
+    protocol: tcp
+    enabled: yes
+    state: present
+    action: allow
+    profile: domain,private
+    direction: in
+
+- name: Firewall Rule for SQL Server. TCP 2382
+  win_firewall_rule:
+    name: SQL Browser
+    localport: 2382
+    protocol: tcp
+    enabled: yes
+    state: present
+    action: allow
+    profile: domain,private
+    direction: in

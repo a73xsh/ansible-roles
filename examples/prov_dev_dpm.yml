@@ -1,0 +1,17 @@
+---
+- name: Provision DEV DPM
+  hosts: HV-WS01
+  # tasks file for create_vm
+  pre_tasks:
+  - name: Create VM
+    include_vars:
+      file: "{{ env }}_{{ role }}.yml"
+  roles:
+    - create_vm
+
+- name: Join Domain Install MSSQL
+  hosts: dev-dpm02
+  roles:
+    - domain_join
+    - OSConfiguration
+    - deploy_dpm

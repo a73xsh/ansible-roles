@@ -1,0 +1,39 @@
+---
+# tasks file for domain_join
+- name: Include vm env var
+  include_vars:
+    file: "{{env}}.yml"
+    
+- name: set the DNS for the private adapter to point to the DC
+  win_dns_client:
+    adapter_names: '*'
+    ipv4_addresses: '{{ nameservers }}'
+
+- name: Change the hostname to sample-hostname
+  win_hostname:
+    name: '{{ inventory_hostname }}'
+  register: res
+
+- name: Reboot
+  win_reboot:
+  when: res.reboot_required
+
+- name: join host to domain
+  win_domain_membership:
+    dns_domain_name: '{{ dns_domain_name }}'
+    domain_admin_user: '{{ domain_admin_user }}'
+    domain_admin_password: '{{ domain_admin_password }}'
+    state: domain
+  register: pri_domain_join_result
+
+- name: reboot host to finalise domain join
+  win_reboot:
+  when: pri_domain_join_result.reboot_required
+
+- name: test out domain user logon
+  win_whoami:
+  become: yes
+  become_method: runas
+  vars:
+    ansible_become_user: '{{ domain_admin_user }}'
+    ansible_become_password: '{{ domain_admin_password }}'

@@ -1,0 +1,53 @@
+---
+# tasks file for deploy_scom
+- name: Check for SCOM agent service...
+  win_service:
+    name: "HealthService"
+  register: svc
+
+- block:
+  - name: Create SCOM folders as needed...
+    win_file:
+      path: '{{ scom_temp_dir }}'
+      state: directory
+
+  - name: Check if SCOM agent is already download
+    win_stat:
+      path: '{{ scom_temp_dir }}\{{ scom_package }}'
+    register: scom_info
+
+  - name: Copy SCOM archive...
+    win_get_url:
+      url:  '{{ scom_download_link }}'
+      dest: '{{ scom_temp_dir }}'
+      timeout: 300
+    when:
+      - not scom_info.stat.exists
+
+  - name: Unzip SCOM archive
+    win_unzip:
+      src: '{{ scom_temp_dir }}\{{ scom_package }}'
+      dest: '{{ scom_temp_dir }}'
+      creates: '{{ scom_temp_dir }}\MOMAgent.msi'
+
+  - name: Install SCOM agent
+    win_shell: '{{ scom_temp_dir }}\InstallScomAgent.ps1'
+    register: powershell_out
+    args:
+      chdir: '{{ scom_temp_dir }}'
+    failed_when: "'Exception' in powershell_out.stderr"
+    # notify: restart win SCOM agent
+
+  - debug: msg="{{ powershell_out.stdout_lines }}"
+
+  - name: Configure SCOM agent
+    win_shell: '{{ scom_temp_dir }}\PostInstallSCOMAgent.ps1'
+    register: powershell_out
+    args:
+      chdir: '{{ scom_temp_dir }}'
+    ignore_errors: yes
+    #failed_when: "'Exception' in powershell_out.stderr"
+
+  - debug: msg="{{ powershell_out.stdout_lines }}"
+    
+  when: svc.exists == false

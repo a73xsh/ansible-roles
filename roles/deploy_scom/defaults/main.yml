@@ -1,0 +1,6 @@
+---
+# defaults file for deploy_scom
+scom_package      : 'MOMAgent.zip'
+scom_download_url : http://10.35.16.16/files
+scom_download_link: "{{ scom_download_url }}/{{ scom_package }}"
+scom_temp_dir     : 'c:\temp\scom'

@@ -1,0 +1,24 @@
+---
+# tasks file for teardown_vm
+- name: Remove VMs
+  win_dsc:
+    resource_name: xVMHyperV
+    name: "{{ item.name }}"
+    vhdpath: "{{ item.dest_vhd }}"
+    state: "off"
+    path: "{{ item.vm_path }}"
+    startupmemory: "{{ item.memory }}"
+    switchname: "{{ item.network_switch }}"
+    processorcount: "{{ item.cpu }}"
+    generation: "{{ item.generation }}"
+    ensure: "absent"
+    PsDscRunAsCredential_username: '{{ ansible_user }}'
+    PsDscRunAsCredential_password: '{{ ansible_password }}'
+  with_items: "{{ vms }}"
+  register: new_vms
+
+- name: Remove VM folder
+  win_file:
+      path: '{{ item.vm_path }}\{{ item.name }}'
+      state: absent
+  with_items: "{{ vms }}"

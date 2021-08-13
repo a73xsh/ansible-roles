@@ -1,0 +1,21 @@
+vms:
+  - type: dpm
+    name: "da-dpm01.sddc.prod"
+    generation: "2"
+
+    cpu: 2   
+    memory: 17179869184
+
+    network:
+      vlanid: 42
+      ip: 10.35.16.31
+      netmask: 255.255.255.0
+      gateway: 10.35.16.1
+      dns: 10.35.16.40
+      
+    network_switch: 'da-sw-01' 
+    
+    os_vhd: "da-dpm01.sddc.prod_OSDisk.vhdx"
+    vm_path: "C:\\ClusterStorage\\dev-xio-001-004"
+    src_vhd: "\\\\dev-sofs\\VMM-Library\\VHDs\\Win2019_STDGUI_07052020_Infra.vhdx"
+    dest_vhd: "C:\\ClusterStorage\\dev-xio-001-004\\da-dpm01.sddc.prod\\da-dpm01.sddc.prod_OSDisk.vhdx"

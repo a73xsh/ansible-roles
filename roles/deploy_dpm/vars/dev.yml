@@ -1,0 +1,17 @@
+mssql_iso: "SQL_2017.ISO"
+mssql_src_path: "\\\\p10s-ws\\ISOs\\SQL_2017.ISO"
+dpm_mssql_engine_agent_service_password: Pa$$w0rd
+dpm_mssql_engine_engine_service_password: Pa$$w0rd
+
+ssrs_package: "SQLServerReportingServices.exe"
+ssrs_path: "https://download.microsoft.com/download/E/6/4/E6477A2A-9B58-40F7-8AD6-62BB8491EA78/SQLServerReportingServices.exe"
+ssrs_server_virtual_directory: 'ReportServer_DPM'
+ssrs_virtual_directory: 'ReportServer_DPM'
+ssrs_server_reserved_url:
+ssrs_reserved_url:
+
+dpm_iso: "DPM_2019.ISO"
+dpm_src_path: "\\\\p10s-ws\\ISOs\\DPM_2019.ISO"
+
+domain_admin_user: dev.lab\Jenkins
+domain_admin_password: Pa$$w0rd

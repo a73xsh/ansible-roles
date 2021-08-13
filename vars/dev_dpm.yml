@@ -1,0 +1,22 @@
+vms:
+  - type: dpm_servers
+    name: "dev-dpm02.dev.lab"
+    generation: "2"
+    exposevirtualizationextensions: "true"
+    # cluster: "DEV-CL-001"
+    cpu: 2   
+    memory: 4294967296
+
+    network:
+      vlanid: 0
+      ip: 192.168.86.31
+      netmask: 255.255.255.0
+      gateway: 192.168.86.1
+      dns: 192.168.86.171
+      
+    network_switch: 'ExternalSwitch' 
+    
+    os_vhd: "dev-dpm02.dev.lab_OSDisk.vhdx"
+    vm_path: "H:\\Hyper-V"
+    src_vhd: "H:\\Hyper-V\\Master\\Win2019_GUI_UN.vhdx"
+    dest_vhd: "H:\\Hyper-V\\dev-dpm02.dev.lab\\dev-dpm02.dev.lab_OSDisk.vhdx"

@@ -1,0 +1,6 @@
+---
+- name: Deploy Prometheus Agent
+  hosts: dev-prom
+  roles:
+    - deploy_docker
+    - deploy_prometheus

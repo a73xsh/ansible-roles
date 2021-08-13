@@ -1,0 +1,5 @@
+WazuhManager               : "10.35.16.107"
+WazhuRegistrationServer    : "10.35.16.107"
+WazuhRegistrationPassword  : "Pa$$w0rd"
+WazuhAgentGroup            : "default,windows"
+WazuhProtocol              : "TCP"

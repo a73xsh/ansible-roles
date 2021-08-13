@@ -1,0 +1,6 @@
+---
+# defaults file for deploy_qualys
+qualys_package      : 'QualysCloudAgent.exe'
+qualys_download_url : http://10.35.16.16/files
+qualys_download_link: "{{ qualys_download_url }}/{{ qualys_package }}"
+qualys_temp_dir     : 'c:\temp\qualys\'

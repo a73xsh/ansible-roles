@@ -1,0 +1,3 @@
+---
+# defaults file for deploy_mcafee
+mcafee_temp_dir     : 'c:\temp\mcafee'

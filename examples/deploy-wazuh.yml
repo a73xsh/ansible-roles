@@ -1,0 +1,5 @@
+---
+- name: Deploy Wazuh Agent
+  hosts: all
+  roles:
+   - deploy_wazuh
